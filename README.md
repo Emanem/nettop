@@ -15,7 +15,7 @@ nettop relies on *libpacap* to intercept all packets and deliver a copy to the a
 
 ### ncurses
 
-nettop relies on *ncurses* to facilitate the UI drawing on console; on Ubuntu-like systems please install `libncurses5-de` or more recent to allow compiling.
+nettop relies on *ncurses* to facilitate the UI drawing on console; on Ubuntu-like systems please install `libncurses5-dev` or more recent to allow compiling.
 
 ## Running
 
