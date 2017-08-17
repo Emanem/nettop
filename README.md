@@ -2,6 +2,8 @@
 
 Utility to show network traffic (both TCP and UDP v4 and v6) split by process and remote host. You can find more info (albeit slightly outdated) [here](http://nettop.youlink.org/).
 
+![nettop in action](http://i.imgur.com/m3xnAK8.png)
+
 ## Building
 
 Download the repository and invoke `make` (`make release` for optimized build - *reccomended* when you want to use it properly and not degbugging/experimenting with it).
@@ -13,7 +15,7 @@ nettop relies on *libpacap* to intercept all packets and deliver a copy to the a
 
 ### ncurses
 
-nettop relies on *ncurses* to facilitate the UI drawing on console; on Ubuntu-like systems please install *libncurses5-dev* or more recent to allow compiling.
+nettop relies on *ncurses* to facilitate the UI drawing on console; on Ubuntu-like systems please install `libncurses5-dev` or more recent to allow compiling.
 
 ## Running
 
