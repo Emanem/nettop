@@ -37,7 +37,7 @@ namespace {
 				"-a, --async-log-file (file)\tSets an output file where to store the packets attribued to the 'kernel' (default not set)\n"
 				"-l, --limit-hosts-rows\t\tLimits maximum number of hosts rows per pid (default no limit)\n"
 				"    --help\t\t\tprints this help and exit\n\n"
-				"Press 'q' or 'ESC' inside nettop to quit\n"
+				"Press 'q' or 'ESC' inside nettop to quit, 'SPACE' or 'p' to pause nettop\n"
 		<< std::flush;
 	}
 }

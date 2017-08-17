@@ -31,8 +31,9 @@
 #include "epoll_stdin.h"
 
 namespace {
-	volatile bool			quit = false;
-	volatile bool			skip_sleep_time = true;
+	volatile bool			quit = false,
+					skip_sleep_time = true,
+					paused = false;
 
 	void sign_onexit(int param) {
 		quit = true;
@@ -129,6 +130,23 @@ namespace {
 		~curses_setup() {
 			endwin();
 		}
+
+		void draw_paused(void) {
+			int 		row = 0; // number of terminal rows
+        		int 		col = 0; // number of terminal columns
+        		getmaxyx(stdscr, row, col);      /* find the boundaries of the screeen */
+			if(col < 60 || row < 5) {
+				refresh();
+				return;
+			}
+
+			static const char	PAUSED[] = "--- PAUSED ---";
+			const size_t		p_offset = (col - std::strlen(PAUSED))/2;
+			attron(A_BOLD);
+			mvprintw(1, p_offset, "%s", PAUSED);
+			attroff(A_BOLD);
+			refresh();
+		}
 	
 		void redraw(const std::chrono::nanoseconds& tm_elapsed, const sorted_p_vec& s_v, const size_t total_pkts, const nettop::proc_mgr::stats& st) {
 			clear();
@@ -216,17 +234,23 @@ namespace {
 		curses_setup::GBPS[] = "GiB/s ";
 
 	struct stdin_exit : public utils::epoll_stdin {
-		virtual void on_data(const char* p, const size_t sz) const {
+		virtual bool on_data(const char* p, const size_t sz) const {
 			for(size_t i = 0; i < sz; ++i) {
 				switch(p[i]) {
 				case 27: // ESC key
 				case 'q':
 					quit = true;
 					break;
+				case ' ':
+				case 'p':
+					paused = !paused;
+					return true;	// do refresh after this!
+					break;
 				default:
 					break;
 				}
 			}
+			return false;
 		}
 	};
 }
@@ -267,25 +291,32 @@ int main(int argc, char *argv[]) {
 				size_t	total_msec_slept = 0;
 				while(!quit && !skip_sleep_time) {
 					const size_t	sleep_interval = 250;
-					ep_exit.do_io(sleep_interval);
+					if(ep_exit.do_io(sleep_interval))
+						break;
 					total_msec_slept += sleep_interval;
 					if(nettop::settings::REFRESH_SECS <= total_msec_slept/1000)
 						break;
 				}
 			}
-			// get new packets (for the real total counter, we are using an atomic type)
-			// _mostly_ accurate
+			// bind to known processes
+			const system_clock::time_point 	cur_time = std::chrono::system_clock::now();
+			// bind to local list and stats
 			std::list<nettop::packet_stats>	ps_list;
 			p_list.swap(ps_list);
 			mgr_st.total_pkts = p_list.total_pkts.exchange(0);
-			// bind to known processes
-			const system_clock::time_point 	cur_time = std::chrono::system_clock::now();
-			p_mgr.bind_packets(ps_list, lam, p_vec, mgr_st, log_list);
-			// sort
-			sorted_p_vec	s_v;
-			sort_filter_data(p_vec, s_v);
-			// redraw now
-			c_window.redraw(cur_time - latest_time, s_v, ps_list.size(), mgr_st);
+			// get new packets (for the real total counter, we are using an atomic type)
+			// _mostly_ accurate
+			if(!paused) {
+				// bind to known processes
+				p_mgr.bind_packets(ps_list, lam, p_vec, mgr_st, log_list);
+				// sort
+				sorted_p_vec	s_v;
+				sort_filter_data(p_vec, s_v);
+				// redraw now
+				c_window.redraw(cur_time - latest_time, s_v, ps_list.size(), mgr_st);
+			} else {
+				c_window.draw_paused();
+			}
 			// set latest time
 			latest_time = cur_time;
 		}

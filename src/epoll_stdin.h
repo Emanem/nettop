@@ -42,22 +42,24 @@ namespace utils {
 			}
 		}
 
-		void do_io(const size_t msec_tmout) {
+		// return true when need to do a refresh
+		bool do_io(const size_t msec_tmout) {
 			struct epoll_event	event = {0};
 			const int		fds = epoll_wait(efd_, &event, 1, msec_tmout);
-			if(0 >= fds) return;	
+			if(0 >= fds) return false;
 			// we can only get 1 event at max...
 			if (event.data.fd == STDIN_FILENO) {
 				char		buf[128];
             			// read input line
             			const int	rb = read(STDIN_FILENO, &buf, 128);
 				if(rb > 0) {
-					on_data(buf, rb);
+					return on_data(buf, rb);
 				}
 			}
+			return false;
 		}
 
-		virtual void on_data(const char* p, const size_t sz) const = 0;
+		virtual bool on_data(const char* p, const size_t sz) const = 0;
 
 		virtual ~epoll_stdin() {
 			close(efd_);
