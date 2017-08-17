@@ -35,7 +35,7 @@ Executes nettop 0.4
 -l, --limit-hosts-rows		Limits maximum number of hosts rows per pid (default no limit)
     --help			prints this help and exit
 
-Press 'q' or 'ESC' inside nettop to quit
+Press 'q' or 'ESC' inside nettop to quit, 'SPACE' or 'p' to pause nettop
 ```
 
 ### Sample usage
