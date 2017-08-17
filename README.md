@@ -24,7 +24,7 @@ nettop relies on *ncurses* to facilitate the UI drawing on console; on Ubuntu-li
 ```
 ./nettop --help
 Usage: ./nettop [options]
-Executes nettop 0.3
+Executes nettop 0.4
 
 -r, --refresh s			sets the refresh rate in 's' seconds (default 3)
 -c, --capture (a|s|r)		Capture mode for 'a'll, 's'end and 'r'ecv only (default 'a')
@@ -34,6 +34,8 @@ Executes nettop 0.3
 -a, --async-log-file (file)	Sets an output file where to store the packets attribued to the 'kernel' (default not set)
 -l, --limit-hosts-rows		Limits maximum number of hosts rows per pid (default no limit)
     --help			prints this help and exit
+
+Press 'q' or 'ESC' inside nettop to quit
 ```
 
 ### Sample usage
