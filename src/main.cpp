@@ -28,6 +28,7 @@
 #include "proc.h"
 #include "name_res.h"
 #include "settings.h"
+#include "epoll_stdin.h"
 
 namespace {
 	volatile bool			quit = false;
@@ -37,7 +38,7 @@ namespace {
 		quit = true;
 	}
 
-	const char*			__version__ = "0.3";
+	const char*			__version__ = "0.4";
 
 	struct ps_sorted_iter {
 		nettop::ps_vec::const_iterator					it_p_vec;
@@ -213,6 +214,21 @@ namespace {
 		curses_setup::KBPS[] = "KiB/s ",
 		curses_setup::MBPS[] = "MiB/s ",
 		curses_setup::GBPS[] = "GiB/s ";
+
+	struct stdin_exit : public utils::epoll_stdin {
+		virtual void on_data(const char* p, const size_t sz) const {
+			for(size_t i = 0; i < sz; ++i) {
+				switch(p[i]) {
+				case 27: // ESC key
+				case 'q':
+					quit = true;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	};
 }
 
 int main(int argc, char *argv[]) {
@@ -236,7 +252,9 @@ int main(int argc, char *argv[]) {
 		cap_th.detach();
 		// init curses
 		curses_setup			c_window(nr, nettop::settings::LIMIT_HOSTS_ROWS);
-		system_clock::time_point	latest_time = std::chrono::system_clock::now();		
+		system_clock::time_point	latest_time = std::chrono::system_clock::now();
+		// initi epoll_stdin
+		stdin_exit			ep_exit;
 		while(!quit) {
 			// initialize all required structures and the processes too
 			nettop::proc_mgr	p_mgr;
@@ -249,7 +267,7 @@ int main(int argc, char *argv[]) {
 				size_t	total_msec_slept = 0;
 				while(!quit && !skip_sleep_time) {
 					const size_t	sleep_interval = 250;
-					std::this_thread::sleep_for(std::chrono::milliseconds(sleep_interval));
+					ep_exit.do_io(sleep_interval);
 					total_msec_slept += sleep_interval;
 					if(nettop::settings::REFRESH_SECS <= total_msec_slept/1000)
 						break;
