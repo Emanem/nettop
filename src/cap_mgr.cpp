@@ -115,7 +115,7 @@ namespace {
 nettop::cap_mgr::cap_mgr() : p_(0) {
 	// open all network devices
 	char	err[PCAP_ERRBUF_SIZE+1];
-	p_ = pcap_open_live(NULL, BUFSIZ, 0, 100, err);
+	p_ = pcap_open_live(NULL, BUFSIZ, 0, 250, err);
 	if(!p_)
 		throw runtime_error(err);
 	// only support Linux Cooked Socket link!
@@ -144,8 +144,6 @@ size_t nettop::cap_mgr::capture_dispatch(packet_list& p_list) {
 void nettop::cap_mgr::async_cap(packet_list& p_list, volatile bool& quit) {
 	while(!quit) {
 		const size_t	n_packets = capture_dispatch(p_list);
-		if(!n_packets)
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 
