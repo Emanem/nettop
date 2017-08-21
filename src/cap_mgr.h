@@ -43,7 +43,7 @@ public:
 
 		~cap_mgr();
 
-		size_t capture_dispatch(packet_list& p_list);
+		void capture_dispatch(packet_list& p_list);
 
 		void async_cap(packet_list& p_list, volatile bool& quit);
 	};

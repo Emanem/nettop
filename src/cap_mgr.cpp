@@ -130,7 +130,7 @@ nettop::cap_mgr::~cap_mgr() {
 	pcap_close(p_);
 }
 
-size_t nettop::cap_mgr::capture_dispatch(packet_list& p_list) {
+void nettop::cap_mgr::capture_dispatch(packet_list& p_list) {
 	st_pkt_list	lcl_list;
 	const int dres = pcap_dispatch(p_, -1, p_handler, (u_char*)&lcl_list);
 	// we never call pcap_breakloop
@@ -138,12 +138,11 @@ size_t nettop::cap_mgr::capture_dispatch(packet_list& p_list) {
 		throw runtime_error(pcap_geterr(p_));
 	p_list.push_many(lcl_list);
 	p_list.total_pkts += dres;
-	return (size_t)dres;
 }
 
 void nettop::cap_mgr::async_cap(packet_list& p_list, volatile bool& quit) {
 	while(!quit) {
-		const size_t	n_packets = capture_dispatch(p_list);
+		capture_dispatch(p_list);
 	}
 }
 
