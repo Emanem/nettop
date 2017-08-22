@@ -46,7 +46,8 @@ namespace utils {
 		bool do_io(const size_t msec_tmout) {
 			struct epoll_event	event = {0};
 			const int		fds = epoll_wait(efd_, &event, 1, msec_tmout);
-			if(0 >= fds) return false;
+			if(0 == fds) return false;
+			else if (0 > fds) throw nettop::runtime_error("Error in epoll_wait: ") << strerror(errno);
 			// we can only get 1 event at max...
 			if (event.data.fd == STDIN_FILENO) {
 				char		buf[128];
@@ -54,7 +55,7 @@ namespace utils {
             			const int	rb = read(STDIN_FILENO, &buf, 128);
 				if(rb > 0) {
 					return on_data(buf, rb);
-				}
+				} else throw nettop::runtime_error("Error in reading STDIN: ") << strerror(errno);
 			}
 			return false;
 		}

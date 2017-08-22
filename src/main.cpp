@@ -253,6 +253,11 @@ namespace {
 			return false;
 		}
 	};
+
+	struct auto_quit {
+		auto_quit() {}
+		~auto_quit() { quit = true; }
+	};
 }
 
 int main(int argc, char *argv[]) {
@@ -279,6 +284,9 @@ int main(int argc, char *argv[]) {
 		system_clock::time_point	latest_time = std::chrono::system_clock::now();
 		// initi epoll_stdin
 		stdin_exit			ep_exit;
+		// automatically set quit to true when
+		// exiting this scope
+		auto_quit	aq_;
 		while(!quit) {
 			// initialize all required structures and the processes too
 			nettop::proc_mgr	p_mgr;
