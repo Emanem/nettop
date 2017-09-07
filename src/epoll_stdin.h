@@ -47,7 +47,11 @@ namespace utils {
 			struct epoll_event	event = {0};
 			const int		fds = epoll_wait(efd_, &event, 1, msec_tmout);
 			if(0 == fds) return false;
-			else if (0 > fds) throw nettop::runtime_error("Error in epoll_wait: ") << strerror(errno);
+			else if (0 > fds) {
+				if(EINTR == errno)
+					return false;
+				throw nettop::runtime_error("Error in epoll_wait: ") << strerror(errno);
+			}
 			// we can only get 1 event at max...
 			if (event.data.fd == STDIN_FILENO) {
 				char		buf[128];
