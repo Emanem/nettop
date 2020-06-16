@@ -1,5 +1,5 @@
 /*
-*	nettop (C) 2017 E. Oriani, ema <AT> fastwebnet <DOT> it
+*	nettop (C) 2017-2020 E. Oriani, ema <AT> fastwebnet <DOT> it
 *
 *	This file is part of nettop.
 *
@@ -34,6 +34,7 @@ namespace nettop {
 		extern bool		ORDER_TOP;
 		extern bool		FILTER_ZERO;
 		extern bool		TCP_UDP_TRAFFIC;
+		extern bool		NO_RESOLVE;
 		extern std::string	ASYNC_LOG_FILE;
 		extern size_t		LIMIT_HOSTS_ROWS;
 	}

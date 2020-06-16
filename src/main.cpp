@@ -1,5 +1,5 @@
 /*
-*	nettop (C) 2017 E. Oriani, ema <AT> fastwebnet <DOT> it
+*	nettop (C) 2017-2020 E. Oriani, ema <AT> fastwebnet <DOT> it
 *
 *	This file is part of nettop.
 *
@@ -39,7 +39,7 @@ namespace {
 		quit = true;
 	}
 
-	const char*			__version__ = "0.4";
+	const char*			__version__ = "0.5";
 
 	struct ps_sorted_iter {
 		nettop::ps_vec::const_iterator					it_p_vec;
@@ -274,7 +274,7 @@ int main(int argc, char *argv[]) {
 		nettop::cap_mgr			c;
 		nettop::local_addr_mgr		lam;
 		nettop::async_log_list		log_list;
-		nettop::name_res		nr(quit);
+		nettop::name_res		nr(quit, nettop::settings::NO_RESOLVE);
 		nettop::async_log		al(quit, nr, nettop::settings::ASYNC_LOG_FILE, log_list);
 		// create cap thread
 		std::thread			cap_th(&nettop::cap_mgr::async_cap, &c, std::ref(p_list), std::ref(quit));
