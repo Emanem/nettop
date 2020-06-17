@@ -1,5 +1,5 @@
 /*
-*	nettop (C) 2017 E. Oriani, ema <AT> fastwebnet <DOT> it
+*	nettop (C) 2017-2020 E. Oriani, ema <AT> fastwebnet <DOT> it
 *
 *	This file is part of nettop.
 *

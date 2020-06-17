@@ -22,15 +22,15 @@ nettop relies on *ncurses* to facilitate the UI drawing on console; on Ubuntu-li
 ### All commands
 
 ```
-./nettop --help
 Usage: ./nettop [options]
-Executes nettop 0.4
+Executes nettop 0.5
 
 -r, --refresh s			sets the refresh rate in 's' seconds (default 3)
 -c, --capture (a|s|r)		Capture mode for 'a'll, 's'end and 'r'ecv only (default 'a')
 -o, --order (a|d)		Ordering of results, 'a'scending, 'd'escending (default 'd')
     --filter-zero		Set to filter all zero results (default not set)
     --tcp-udp-split		Displays split of TCP and UDP traffic in % (default not set)
+-n, --no-resolve		Do not resolve addresses, leave IPs to be displayed
 -a, --async-log-file (file)	Sets an output file where to store the packets attribued to the 'kernel' (default not set)
 -l, --limit-hosts-rows		Limits maximum number of hosts rows per pid (default no limit)
     --help			prints this help and exit

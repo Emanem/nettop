@@ -1,5 +1,5 @@
 /*
-*	nettop (C) 2017 E. Oriani, ema <AT> fastwebnet <DOT> it
+*	nettop (C) 2017-2020 E. Oriani, ema <AT> fastwebnet <DOT> it
 *
 *	This file is part of nettop.
 *
@@ -42,7 +42,7 @@ namespace nettop {
 		
 		void thread_proc(void);
 public:
-		name_res(volatile bool& e);
+		name_res(volatile bool& e, bool do_not_resolve);
 
 		std::string to_str(const addr_t& in);
 		

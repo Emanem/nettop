@@ -1,5 +1,5 @@
 /*
-*	nettop (C) 2017 E. Oriani, ema <AT> fastwebnet <DOT> it
+*	nettop (C) 2017-2020 E. Oriani, ema <AT> fastwebnet <DOT> it
 *
 *	This file is part of nettop.
 *
@@ -34,6 +34,7 @@ namespace {
 				"-o, --order (a|d)\t\tOrdering of results, 'a'scending, 'd'escending (default '" << 'd' << "')\n"
 				"    --filter-zero\t\tSet to filter all zero results (default not set)\n"
 				"    --tcp-udp-split\t\tDisplays split of TCP and UDP traffic in % (default not set)\n"
+				"-n, --no-resolve\t\tDo not resolve addresses, leave IPs to be displayed\n"
 				"-a, --async-log-file (file)\tSets an output file where to store the packets attribued to the 'kernel' (default not set)\n"
 				"-l, --limit-hosts-rows\t\tLimits maximum number of hosts rows per pid (default no limit)\n"
 				"    --help\t\t\tprints this help and exit\n\n"
@@ -49,6 +50,7 @@ namespace nettop {
 		bool		ORDER_TOP = true;
 		bool		FILTER_ZERO = false;
 		bool		TCP_UDP_TRAFFIC = false;
+		bool		NO_RESOLVE = false;
 		std::string	ASYNC_LOG_FILE = "";
 		size_t		LIMIT_HOSTS_ROWS = 0;
 	}
@@ -63,6 +65,7 @@ int nettop::parse_args(int argc, char *argv[], const char *prog, const char *ver
 		{"refresh",		required_argument, 0,	'r'},
 		{"capture",		required_argument, 0,	'c'},
 		{"order",		required_argument, 0,	'o'},
+		{"no-resolve",		no_argument,       0,	'n'},
 		{"filter-zero",		no_argument, 	   0,	0},
 		{"tcp-udp-split",	no_argument,	   0,	0},
 		{"async-log-file",	required_argument, 0,	'a'},
@@ -74,7 +77,7 @@ int nettop::parse_args(int argc, char *argv[], const char *prog, const char *ver
         	// getopt_long stores the option index here
         	int		option_index = 0;
 
-		if(-1 == (c = getopt_long(argc, argv, "hr:c:o:a:l:", long_options, &option_index)))
+		if(-1 == (c = getopt_long(argc, argv, "hr:c:o:a:l:n", long_options, &option_index)))
        			break;
 
 		switch (c) {
@@ -132,6 +135,10 @@ int nettop::parse_args(int argc, char *argv[], const char *prog, const char *ver
 		case 'l': {
 			const int	m_res = std::atoi(optarg);
 			LIMIT_HOSTS_ROWS = (m_res > 0) ? m_res : 0;
+		} break;
+
+		case 'n': {
+			NO_RESOLVE = true;
 		} break;
 
 		case '?':

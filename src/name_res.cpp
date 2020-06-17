@@ -1,5 +1,5 @@
 /*
-*	nettop (C) 2017 E. Oriani, ema <AT> fastwebnet <DOT> it
+*	nettop (C) 2017-2020 E. Oriani, ema <AT> fastwebnet <DOT> it
 *
 *	This file is part of nettop.
 *
@@ -35,11 +35,15 @@ void nettop::name_res::thread_proc(void) {
 	}
 }
 
-nettop::name_res::name_res(volatile bool& e) : exit_(e) {
-	thrd_ = std::shared_ptr<std::thread>(new std::thread(&name_res::thread_proc, this));
+nettop::name_res::name_res(volatile bool& e, bool do_not_resolve) : exit_(e) {
+	thrd_ = std::shared_ptr<std::thread>(do_not_resolve ? 0 : new std::thread(&name_res::thread_proc, this));
 }
 
 std::string nettop::name_res::to_str(const addr_t& in) {
+	// if we don't have a running thread
+	// just return the IP address
+	if (!thrd_)
+		return in.to_str();
 	// try to find if we have it
 	std::lock_guard<std::mutex>	lg(mtx_);
 	auto				it = addr_map_.find(in);
