@@ -17,6 +17,7 @@
 *	along with nettop.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <memory>
 #include "name_res.h"
 
 void nettop::name_res::thread_proc(void) {
