@@ -41,6 +41,7 @@ namespace nettop {
 		const enum type	t;
 		const double	ts;
 
+		//const uint64_t	recognized_process_index;
 		packet_stats(const addr_t& src_, const addr_t& dst_, const uint16_t p_src_, const uint16_t p_dst_, const size_t len_, const enum type t_, const double ts_) : src(src_), dst(dst_), p_src(p_src_), p_dst(p_dst_), len(len_), t(t_), ts(ts_) {
 		}
 

@@ -32,6 +32,14 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <math.h>
+
+#define TIME_BINS 300
+#define SIZE_BINS 300
+#define TIME_WINDOW_SIZE 30.0 // in seconds
+#define ROLLING_WINDOW_STRIDE 10 // a new windows of TIME_WINDOW_SIZE is anlyzed every ROLLING_WINDOW_STRIDE seconds
+double time_bin_delta = ((TIME_WINDOW_SIZE) / TIME_BINS);
+uint64_t size_bin_delta = 1500/SIZE_BINS;
 
 namespace {
 
@@ -255,11 +263,97 @@ nettop::proc_mgr::proc_mgr() {
 		std::sort(sds.begin(), sds.end());
 		// initialize the map
 		p_map_[proc_info(pid, cmd_line, sds)];
-    	}
-    	closedir(dir);
+	}
+	closedir(dir);
+	read_relevant_process_names();
 }
 
 //#include <iostream>
+void nettop::proc_mgr::read_relevant_process_names()
+{
+	std::ifstream t("processes_names.txt");
+	std::stringstream buffer;
+	buffer << t.rdbuf();
+
+	while( buffer.good() )
+	{
+		std::string substr;
+		getline( buffer, substr, ',' );
+		process_to_analyze.push_back( substr );
+	}
+}
+void nettop::proc_mgr::generate_samples(int pid, std::string name, double ts)
+{
+	std::string line;
+	for(const auto& time_bin : sample_map[pid].sample_bins) 
+	{
+		for(const auto& sample_bin : time_bin) 
+		{
+			line += std::to_string(sample_bin);
+			line += ",";
+		}
+		line += "\n";
+	}
+	int ts1 = (int) ts;
+	std::string fname = name + "_" + std::to_string(pid) + "_" + std::to_string(ts1) + ".csv";
+    std::ofstream out(fname);
+    out << line;
+    out.close();
+	printf("writing to %s\n", fname.c_str());
+
+}
+
+std::string nettop::proc_mgr::name_from_pid(int pid)
+{
+	std::string name =  "other";
+	
+	// find the name of that pid and check it is one of the names we track
+	for(proc_map::iterator it = p_map_.begin(); it != p_map_.end(); ++it) 
+	{
+		if (it->first.pid == pid)
+		{
+			for(const auto& prcs : process_to_analyze) 
+			{
+				if (it->first.cmd.find(prcs) != std::string::npos)
+				{
+					name = prcs;
+					return name;
+				}	
+			}
+			//break;
+		} 
+	}
+	return name;
+}
+void nettop::proc_mgr::log_packet(int pid,int ds,int len ,double ts)
+{
+	if (sample_map[pid].start_time == 0)
+	{
+		sample_map[pid].start_time = ts;
+	}
+	uint64_t time_bin = (ts - sample_map[pid].start_time)/time_bin_delta;
+	uint64_t size_bin = len/size_bin_delta;
+	static int cnt=0;
+	if (time_bin > 299)
+	{
+		//printf("strange time bin %d\n",time_bin);
+		time_bin = 299;
+	}
+	if (size_bin > 299)
+	{
+		//printf("strange size bin %d\n",size_bin);
+		size_bin = 299;
+	}
+	sample_map[pid].sample_bins[time_bin][size_bin] ++;
+
+	if ((ts - sample_map[pid].start_time) > TIME_WINDOW_SIZE)
+	{
+		printf("diff is %u\n",(ts - sample_map[pid].start_time));
+		std::string name = name_from_pid(pid); 
+		generate_samples(pid,name, ts);
+		sample_map[pid].start_time = ts;
+	}
+}
 
 void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const local_addr_mgr& lam, ps_vec& out, stats& st, async_log_list& log_list) {
 	// create a utility map from port/proto/ipv --> pid
@@ -315,6 +409,7 @@ void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const
 					continue;
 				}
 			}
+			log_packet(it->second->first.pid,0,i.len,i.ts);
 			it->second->second.first.push_back(i);
 		} else if(settings::CAPTURE_ASR & CAPTURE_SEND) {
 			const ext_sd	cur_sd(i.src, i.p_src, i.t);
@@ -330,6 +425,7 @@ void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const
 					continue;
 				}
 			}
+			log_packet(it->second->first.pid,1,i.len,i.ts);
 			it->second->second.second.push_back(i);
 		}
 		++st.proc_pkts;

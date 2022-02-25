@@ -56,6 +56,8 @@ namespace nettop {
 
 	typedef std::vector<ext_sd>	sd_vec;
 
+
+
 	class proc_info {
 
 		proc_info& operator=(const proc_info&) = delete;
@@ -108,7 +110,23 @@ namespace nettop {
 		typedef std::list<packet_stats>					ps_list;
 		typedef std::map<proc_info, std::pair<ps_list, ps_list> >	proc_map;
 
+		// lior - for samples generation
+		struct samples {
+			int process_index;
+			int a_b_window;
+			std::string	 process_name;
+			double start_time;
+			std::array<std::array<uint64_t, 300>, 300>	 sample_bins;		
+		};
+
+		//typedef std::vector<samples>  sample_vec;
+		std::map<int,samples>	sample_map;
+		std::map<int,std::string>	pid_2_name;
+		std::vector<std::string> process_to_analyze;
+
+
 		proc_map	p_map_;
+		
 	public:
 		struct stats {
 			size_t	total_pkts,
@@ -126,6 +144,12 @@ namespace nettop {
 		proc_mgr();
 
 		void bind_packets(const std::list<packet_stats>& p_list, const local_addr_mgr& lam, ps_vec& out, stats& st, async_log_list& log_list);
+		void read_relevant_process_names();
+		void generate_samples(int pid, std::string name, double ts);
+		// lior
+		double start_time;
+		void log_packet(int pid,int ds,int len ,double ts);
+		std::string name_from_pid(int pid);
 	};
 }
 
