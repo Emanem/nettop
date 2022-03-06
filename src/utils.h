@@ -65,7 +65,7 @@ public:
         };
 
 	inline double tv_to_sec(const timeval& tv) {
-		return 1.0*tv.tv_sec + (1.0/1000000000.0)*tv.tv_usec;
+		return 1.0*tv.tv_sec + (1.0/1000000.0)*tv.tv_usec;
 	}
 }
 
