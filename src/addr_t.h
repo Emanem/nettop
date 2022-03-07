@@ -89,16 +89,20 @@ public:
 		return af_type_ == AF_INET6;
 	}
 
-       	std::string to_str(const bool& full_name = false) const {
-		const int	gni_flags = (full_name) ? 0 : NI_NUMERICHOST|NI_NUMERICSERV;
+	std::string to_str(const bool full_name = false, const int rec_calls = 0) const {
+		const int	gni_flags = (full_name) ? 0 : NI_NUMERICHOST;
                	if(af_type_ == AF_INET) {
                        	struct sockaddr_in      in;
                        	in.sin_family = AF_INET;
                        	in.sin_port = 123;
                        	in.sin_addr = ip_data_.ipv4;
                        	char                    hbuf[NI_MAXHOST];
-                       	if(getnameinfo((const sockaddr*)&in, sizeof(struct sockaddr_in), hbuf, sizeof(hbuf), 0, 0, gni_flags))
-                               	return "<invalid host>";
+			if(const int rv = getnameinfo((const sockaddr*)&in, sizeof(struct sockaddr_in), hbuf, sizeof(hbuf), 0, 0, gni_flags)) {
+				if(rec_calls > 1)
+					return "<invalid host>";
+				if(EAI_AGAIN == rv)
+					return to_str(false, rec_calls+1);
+			}
                        	return hbuf;
                	}
                	struct sockaddr_in6     in;
@@ -108,8 +112,12 @@ public:
                	in.sin6_addr = ip_data_.ipv6;
                	in.sin6_scope_id = 0;
                	char                    hbuf[NI_MAXHOST];
-               	if(getnameinfo((const sockaddr*)&in, sizeof(struct sockaddr_in6), hbuf, sizeof(hbuf), 0, 0, gni_flags))
-                       	return "<invalid host>";
+		if(const int rv = getnameinfo((const sockaddr*)&in, sizeof(struct sockaddr_in6), hbuf, sizeof(hbuf), 0, 0, gni_flags)) {
+			if(rec_calls > 1)
+				return "<invalid host>";
+			if(EAI_AGAIN == rv)
+				return to_str(false, rec_calls+1);
+		}
                	return hbuf;
        	}
 
