@@ -37,6 +37,7 @@ namespace nettop {
 		extern bool		NO_RESOLVE;
 		extern std::string	ASYNC_LOG_FILE;
 		extern size_t		LIMIT_HOSTS_ROWS;
+		extern std::string	VKDTO_FILE;
 	}
 
 	int parse_args(int argc, char *argv[], const char *prog, const char *version);

@@ -23,12 +23,14 @@
 #include <algorithm>
 #include <curses.h>
 #include <csignal>
+#include <memory>
 #include "utils.h"
 #include "cap_mgr.h"
 #include "proc.h"
 #include "name_res.h"
 #include "settings.h"
 #include "epoll_stdin.h"
+#include "hashtext_fmt.h"
 
 namespace {
 	volatile bool			quit = false,
@@ -39,7 +41,7 @@ namespace {
 		quit = true;
 	}
 
-	const char*			__version__ = "0.5";
+	const char*			__version__ = "0.5.1";
 
 	struct ps_sorted_iter {
 		nettop::ps_vec::const_iterator					it_p_vec;
@@ -148,10 +150,19 @@ namespace {
 			refresh();
 		}
 	
-		void redraw(const std::chrono::nanoseconds& tm_elapsed, const sorted_p_vec& s_v, const size_t total_pkts, const nettop::proc_mgr::stats& st) {
+		void redraw(const std::chrono::nanoseconds& tm_elapsed, const sorted_p_vec& s_v, const size_t total_pkts, const nettop::proc_mgr::stats& st, FILE *fp_vkdto) {
 			clear();
-			int 		row = 0; // number of terminal rows
-        		int 		col = 0; // number of terminal columns
+			// vkdto related variables/lambdas
+			std::wstringstream	ws_vkdto;
+			wchar_t			wc_buf[512];
+			auto fn_w_attr = [&ws_vkdto](const uint32_t attr) {
+				const wchar_t	h_attr = L'#';
+				ws_vkdto.write((const wchar_t*)&h_attr, 1); // sizeof(uint32_t));
+				ws_vkdto.write((const wchar_t*)&attr, 1); //sizeof(uint32_t));
+			};
+
+			int 			row = 0; // number of terminal rows
+        		int 			col = 0; // number of terminal columns
         		getmaxyx(stdscr, row, col);      /* find the boundaries of the screeen */
 			// UI coordinates:
 			// 6     2 23                     2 9        2 9        2 5
@@ -167,8 +178,15 @@ namespace {
 					tot_sent = 0;
 			// print header
 			attron(A_REVERSE);
-			mvprintw(cur_row++, 0, "%-6s  %-*s  %-9s  %-9s        ", "PID", cmdline_len, "CMDLINE", "RECV", "SENT");
+			mvprintw(cur_row++, 0, "%-6s  %-*s  %-9s  %-9s        ", "PID", (int)cmdline_len, "CMDLINE", "RECV", "SENT");
 			attroff(A_REVERSE);
+			// vkdto
+			if(fp_vkdto) {
+				fn_w_attr(ht_fmt::REVERSE_ON);
+				std::swprintf(wc_buf, sizeof(wc_buf)/sizeof(wchar_t), L"\n%-6s  %-*s  %-9s  %-9s        ", "PID", (int)cmdline_len, "CMDLINE", "RECV", "SENT");
+				ws_vkdto << wc_buf;
+				fn_w_attr(ht_fmt::REVERSE_OFF);
+			}
 			// print each entity
 			for(const auto& sp_i : s_v) {
 				// print each process row
@@ -184,8 +202,15 @@ namespace {
 				if(cur_row >= row-1)
 					continue;
 				attron(A_BOLD);
-				mvprintw(cur_row++, 0, "%6d  %-*s %10.2f %10.2f  %-5s", i.pid, cmdline_len, r_cmd.c_str(), r_d, s_d, fmt);
+				mvprintw(cur_row++, 0, "%6d  %-*s %10.2f %10.2f  %-5s", i.pid, (int)cmdline_len, r_cmd.c_str(), r_d, s_d, fmt);
 				attroff(A_BOLD);
+				// vkdto
+				if(fp_vkdto) {
+					fn_w_attr(ht_fmt::BOLD_ON);
+					std::swprintf(wc_buf, sizeof(wc_buf)/sizeof(wchar_t), L"\n%6d  %-*s %10.2f %10.2f  %-5s", i.pid, (int)cmdline_len, r_cmd.c_str(), r_d, s_d, fmt);
+					ws_vkdto << wc_buf;
+					fn_w_attr(ht_fmt::BOLD_OFF);
+				}
 				// print each server txn
 				size_t	cur_hosts = 0;
 				for(const auto& sp_j : sp_i->v_it_addr) {
@@ -193,6 +218,12 @@ namespace {
 						attron(A_DIM);
 						mvprintw(cur_row++, 0, "           ...");
 						attroff(A_DIM);
+						// vkdto
+						if(fp_vkdto) {
+							fn_w_attr(ht_fmt::DIM_ON);
+							ws_vkdto << "\n           ...";
+							fn_w_attr(ht_fmt::DIM_OFF);
+						}
 						break;
 					}
 					const auto&	j = *sp_j;
@@ -209,8 +240,15 @@ namespace {
 					std::string	r_host = buf; r_host.resize(host_line);
 					recv_send_format(tm_elapsed, j.second.recv, j.second.sent, r_d, s_d, fmt);
 					attron(A_DIM);
-					mvprintw(cur_row++, 0, "           %-*s %10.2f %10.2f  %-5s", host_line, r_host.c_str(), r_d, s_d, fmt);
+					mvprintw(cur_row++, 0, "           %-*s %10.2f %10.2f  %-5s", (int)host_line, r_host.c_str(), r_d, s_d, fmt);
 					attroff(A_DIM);
+					// vkdto
+					if(fp_vkdto) {
+						fn_w_attr(ht_fmt::DIM_ON);
+						std::swprintf(wc_buf, sizeof(wc_buf)/sizeof(wchar_t), L"\n           %-*s %10.2f %10.2f  %-5s", (int)host_line, r_host.c_str(), r_d, s_d, fmt);
+						ws_vkdto << wc_buf;
+						fn_w_attr(ht_fmt::DIM_OFF);
+					}
 					++cur_hosts;
 				}
 			}
@@ -222,9 +260,19 @@ namespace {
 			char	total_buf[128];
 			snprintf(total_buf, 128, "%s [%5.2fs (%5lu/%5lu/%5lu/%5lu/%5lu)]", 
 				__version__, 1.0*tm_elapsed.count()/1000000000.0, st.total_pkts, st.total_pkts-st.proc_pkts, st.undet_pkts, st.unmap_r_pkts, st.unmap_s_pkts);
-			mvprintw(0, 0, "nettop %-*s", cmdline_len-6, total_buf);
+			mvprintw(0, 0, "nettop %-*s", (int)cmdline_len-6, total_buf);
 			mvprintw(0, cmdline_len+1, "  Total %10.2f %10.2f  %-5s", r_d, s_d, fmt);
 			refresh();
+			// vkdto
+			if(fp_vkdto) {
+				int wc = std::swprintf(wc_buf, sizeof(wc_buf)/sizeof(wchar_t), L"nettop %-*s\n", (int)cmdline_len-6, total_buf);
+				fwrite(&wc_buf, 1, sizeof(wchar_t)*wc, fp_vkdto);
+				wc = std::swprintf(wc_buf, sizeof(wc_buf)/sizeof(wchar_t), L"  Total %10.2f %10.2f  %-5s\n", r_d, s_d, fmt);
+				fseek(fp_vkdto, (cmdline_len+1)*sizeof(wchar_t), SEEK_SET);
+				fwrite(&wc_buf, 1, sizeof(wchar_t)*wc, fp_vkdto);
+				const auto s = ws_vkdto.str();
+				fwrite(s.c_str(), 1, sizeof(wchar_t)*s.size(), fp_vkdto);
+			}
 		}
 	};
 
@@ -321,7 +369,10 @@ int main(int argc, char *argv[]) {
 				sorted_p_vec	s_v;
 				sort_filter_data(p_vec, s_v);
 				// redraw now
-				c_window.redraw(cur_time - latest_time, s_v, ps_list.size(), mgr_st);
+				std::unique_ptr<FILE, void(*)(FILE*)>	vkdto_fp(
+						nettop::settings::VKDTO_FILE.empty() ? 0 : fopen(nettop::settings::VKDTO_FILE.c_str(), "w"),
+						[](FILE* fp) { if(fp) fclose(fp); });
+				c_window.redraw(cur_time - latest_time, s_v, ps_list.size(), mgr_st, vkdto_fp.get());
 			} else {
 				c_window.draw_paused();
 			}

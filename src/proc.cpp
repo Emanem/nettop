@@ -74,12 +74,12 @@ namespace {
         		if (entry->d_type == DT_DIR)
 				continue;
 			// prepare and read the sym link
-			char		cur_sd[128],
-					buf_sd[128];
-			std::snprintf(cur_sd, 128, "/proc/%i/fd/%s", pid, entry->d_name);
-			const size_t rb = readlink(cur_sd, buf_sd, 128);
-			if(rb >= 128)
-				buf_sd[127] = '\0';
+			char		cur_sd[512],
+					buf_sd[512];
+			std::snprintf(cur_sd, 512, "/proc/%i/fd/%s", pid, entry->d_name);
+			const size_t rb = readlink(cur_sd, buf_sd, 512);
+			if(rb >= 512)
+				buf_sd[511] = '\0';
 			// check if it's a socket or not
 			unsigned long	inode = 0;
 			if(1 != std::sscanf(buf_sd, "socket:[%ld]", &inode))

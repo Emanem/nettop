@@ -23,7 +23,7 @@ nettop relies on *ncurses* to facilitate the UI drawing on console; on Ubuntu-li
 
 ```
 Usage: ./nettop [options]
-Executes nettop 0.5
+Executes nettop 0.5.1
 
 -r, --refresh s			sets the refresh rate in 's' seconds (default 3)
 -c, --capture (a|s|r)		Capture mode for 'a'll, 's'end and 'r'ecv only (default 'a')
@@ -33,6 +33,7 @@ Executes nettop 0.5
 -n, --no-resolve		Do not resolve addresses, leave IPs to be displayed
 -a, --async-log-file (file)	Sets an output file where to store the packets attribued to the 'kernel' (default not set)
 -l, --limit-hosts-rows		Limits maximum number of hosts rows per pid (default no limit)
+-v, --vkdto-file (file)		Sets output file for vkdto (a Vulkan overlay) - ideally on '/dev/shm/...'
     --help			prints this help and exit
 
 Press 'q' or 'ESC' inside nettop to quit, 'SPACE' or 'p' to pause nettop
@@ -60,7 +61,7 @@ I couldn't find anything which would just do this out of the box, so I wrote a u
 
 I would think so - anyhow, look at the sources. If you don't trust what I'm doing, download the repo, inspect the code, compile, play around and let me know!
 
-### what are the *5* numbers between brackets on top left?
+### What are the *5* numbers between brackets on top left?
 
 They do represent the following:
 - Total packets intercepted by libpcap (not only TCP and UDP, but potentially other IP types and non IP - rare these days)
@@ -68,6 +69,10 @@ They do represent the following:
 - Undetermined packets - i.e. packets sent *from* **and** *to* the local computer (i.e. not touching the network *card*s), or also when packets have got both remote sources and destinations (i.e. applications spoofing IP address?)
 - Total unmapped received packets: nettop could not attribute these packets to any current *PID*, hence it will assing them to *PID* 0. This might be due to the fact that for current interval we took a *snapshot* of running processes after parsing the packets, hence we could not link the *PID*s - or also, when you use APIs such as *gethostbyname*, the kernel will resolve and use the network for you, hence PID 0.
 - Total unmapped sent packets; as above but for sent packets
+
+### What is _vkdto_ ?
+
+It's a vulkan layer which (re) loads a file from the filesystem (usually from _/dev/shm/..._ because such files get re-created many times every second) and displays on a given window - useful to have the content of _nettop_ in such applications. See [vkdto](https://github.com/Emanem/vkdto) for more details.
 
 ## Credits
 

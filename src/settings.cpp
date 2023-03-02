@@ -37,6 +37,7 @@ namespace {
 				"-n, --no-resolve\t\tDo not resolve addresses, leave IPs to be displayed\n"
 				"-a, --async-log-file (file)\tSets an output file where to store the packets attribued to the 'kernel' (default not set)\n"
 				"-l, --limit-hosts-rows\t\tLimits maximum number of hosts rows per pid (default no limit)\n"
+				"-v, --vkdto-file (file)\t\tSets output file for vkdto (a Vulkan overlay) - ideally on '/dev/shm/...'\n"
 				"    --help\t\t\tprints this help and exit\n\n"
 				"Press 'q' or 'ESC' inside nettop to quit, 'SPACE' or 'p' to pause nettop\n"
 		<< std::flush;
@@ -53,6 +54,7 @@ namespace nettop {
 		bool		NO_RESOLVE = false;
 		std::string	ASYNC_LOG_FILE = "";
 		size_t		LIMIT_HOSTS_ROWS = 0;
+		std::string	VKDTO_FILE = "";
 	}
 }
 
@@ -70,6 +72,7 @@ int nettop::parse_args(int argc, char *argv[], const char *prog, const char *ver
 		{"tcp-udp-split",	no_argument,	   0,	0},
 		{"async-log-file",	required_argument, 0,	'a'},
 		{"limit-hosts-rows",	required_argument, 0,	'l'},
+		{"vkdto-file",		required_argument, 0,	'v'},
 		{0, 0, 0, 0}
 	};
 	
@@ -77,7 +80,7 @@ int nettop::parse_args(int argc, char *argv[], const char *prog, const char *ver
         	// getopt_long stores the option index here
         	int		option_index = 0;
 
-		if(-1 == (c = getopt_long(argc, argv, "hr:c:o:a:l:n", long_options, &option_index)))
+		if(-1 == (c = getopt_long(argc, argv, "hr:c:o:a:l:nv:", long_options, &option_index)))
        			break;
 
 		switch (c) {
@@ -139,6 +142,10 @@ int nettop::parse_args(int argc, char *argv[], const char *prog, const char *ver
 
 		case 'n': {
 			NO_RESOLVE = true;
+		} break;
+
+		case 'v': {
+			VKDTO_FILE = optarg;
 		} break;
 
 		case '?':
