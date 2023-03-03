@@ -33,11 +33,24 @@ namespace {
 
 	typedef std::list<nettop::packet_stats>	st_pkt_list;
 
+	struct pcap_user_s {
+		st_pkt_list	p_list;
+		size_t		total_pkts;
+
+		pcap_user_s() : total_pkts(0) {
+		}
+	};
+
 	// linux cooked header
-	// glanced from libpcap/ssl.h
+	// glanced from libpcap/sll.h - https://en.wikipedia.org/wiki/EtherType
+	// remeber these have to be in NBO
 	#define SLL_ADDRLEN     	(8)               /* length of address field */
 	#define SLL_PROTOCOL_IP		(0x0008)
+	#define SLL_PROTOCOL_ARP	(0x0608)
 	#define SLL_PROTOCOL_IP6	(0xDD86)
+	#define SLL_PROTOCOL_IPX	(0x3781)
+	#define SLL_PROTOCOL_QNX	(0x0482)
+
 	struct sll_header {
         	u_int16_t	sll_pkttype;          /* packet type */
         	u_int16_t	sll_hatype;           /* link-layer address type */
@@ -96,19 +109,29 @@ namespace {
 
 	void p_handler(u_char *user, const struct pcap_pkthdr *header, const u_char *data) {
 		const struct sll_header *sll = (struct sll_header*)data;
-		st_pkt_list& 		p_list = *(st_pkt_list*)user;
+		pcap_user_s		*p_user = (pcap_user_s*)user;
 		const double		ts = nettop::tv_to_sec(header->ts);
+		// this is ETH_P_ type but in NBO (Network Byte Order)
+		// hence the two bytes are swapped (i.e. IP is 0x0800 --> 0x0008)
+		// https://en.wikipedia.org/wiki/EtherType
 		switch(sll->sll_protocol) {
 			case SLL_PROTOCOL_IP:
-				process_ip(data + sizeof(struct sll_header), p_list, ts, header->len);
+				process_ip(data + sizeof(struct sll_header), p_user->p_list, ts, header->len);
 				break;
 			case SLL_PROTOCOL_IP6:
-				process_ip6(data + sizeof(struct sll_header), p_list, ts, header->len);
+				process_ip6(data + sizeof(struct sll_header), p_user->p_list, ts, header->len);
 				break;
+			case SLL_PROTOCOL_ARP:
+			case SLL_PROTOCOL_IPX:
+			case SLL_PROTOCOL_QNX:
 			default:
-				//std::cerr << "Unknown SLL protocol " << (int)sll->sll_protocol << ", skipping packet" << std::endl;
+				/*{
+					std::ofstream ostr("SLL.log", std::ios_base::app);
+					ostr << "Unknown SLL protocol " << std::hex << (int)sll->sll_protocol << ", skipping packet" << std::endl;
+				}*/
 				break;
 		}
+		++p_user->total_pkts;
 	}
 }
 
@@ -131,13 +154,16 @@ nettop::cap_mgr::~cap_mgr() {
 }
 
 void nettop::cap_mgr::capture_dispatch(packet_list& p_list) {
-	st_pkt_list	lcl_list;
-	const int dres = pcap_dispatch(p_, -1, p_handler, (u_char*)&lcl_list);
+	pcap_user_s	lcl_user_s;
+	const int dres = pcap_dispatch(p_, -1, p_handler, (u_char*)&lcl_user_s);
 	// we never call pcap_breakloop
 	if(-1 == dres)
 		throw runtime_error(pcap_geterr(p_));
-	p_list.push_many(lcl_list);
-	p_list.total_pkts += dres;
+	// we shouls always assert the below
+	if(dres != (int)lcl_user_s.total_pkts)
+		throw runtime_error("Fatal error, invalid number of packets processed by pcap: ") << lcl_user_s.total_pkts << " vs pcap_dispatch: " << dres;
+	p_list.push_many(lcl_user_s.p_list);
+	p_list.total_pkts.fetch_add(dres);
 }
 
 void nettop::cap_mgr::async_cap(packet_list& p_list, volatile bool& quit) {
