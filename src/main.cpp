@@ -259,7 +259,12 @@ namespace {
 			recv_send_format(tm_elapsed, tot_recv, tot_sent, r_d, s_d, fmt);
 			char	total_buf[128];
 			snprintf(total_buf, 128, "%s [%5.2fs (%5lu/%5lu/%5lu/%5lu/%5lu)]", 
-				__version__, 1.0*tm_elapsed.count()/1000000000.0, st.total_pkts, st.total_pkts-st.proc_pkts, st.undet_pkts, st.unmap_r_pkts, st.unmap_s_pkts);
+				__version__, 1.0*tm_elapsed.count()/1000000000.0, 
+				st.total_pkts,
+				st.total_pkts-(st.proc_pkts+st.undet_pkts+st.unmap_r_pkts+st.unmap_s_pkts+st.local_pkts),
+				st.undet_pkts,
+				st.unmap_r_pkts,
+				st.unmap_s_pkts);
 			mvprintw(0, 0, "nettop %-*s", (int)cmdline_len-6, total_buf);
 			mvprintw(0, cmdline_len+1, "  Total %10.2f %10.2f  %-5s", r_d, s_d, fmt);
 			refresh();

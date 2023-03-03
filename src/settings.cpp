@@ -47,7 +47,7 @@ namespace {
 namespace nettop { 
 	namespace settings {
 		size_t		REFRESH_SECS = 3;
-		int		CAPTURE_ASR = 3;
+		int		CAPTURE_ASR = CAPTURE_ALL;
 		bool		ORDER_TOP = true;
 		bool		FILTER_ZERO = false;
 		bool		TCP_UDP_TRAFFIC = false;

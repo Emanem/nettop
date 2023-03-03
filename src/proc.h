@@ -113,13 +113,14 @@ namespace nettop {
 		struct stats {
 			size_t	total_pkts,
 				proc_pkts,
+				local_pkts,
 				undet_pkts,
 				unmap_r_pkts,
 				unmap_s_pkts;
 			double	min_ts,
 				max_ts;
 
-			stats() : total_pkts(0), proc_pkts(0), undet_pkts(0), unmap_r_pkts(0), unmap_s_pkts(0), min_ts(-1.0), max_ts(-1.0) {
+			stats() : total_pkts(0), proc_pkts(0), local_pkts(0), undet_pkts(0), unmap_r_pkts(0), unmap_s_pkts(0), min_ts(-1.0), max_ts(-1.0) {
 			}
 		};
 

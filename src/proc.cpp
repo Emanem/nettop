@@ -176,7 +176,8 @@ namespace {
 		enum type {
 			UNDET = 0,
 			UNMAP_R,
-			UNMAP_S
+			UNMAP_S,
+			LOCAL
 		};
 
 		const nettop::packet_stats	ps;
@@ -197,8 +198,11 @@ namespace {
 				case type::UNMAP_S:
 					oss << "UNMAP_S:";
 					break;
+				case type::LOCAL:
+					oss << "LOCAL  :";
+					break;
 			}
-			oss << nr.to_str(ps.src) << ":" << ps.p_src << " --> " << nr.to_str(ps.dst) << ":" << ps.p_dst;
+			oss << "(" << ps.t << ") " << nr.to_str(ps.src) << ":" << ps.p_src << " --> " << nr.to_str(ps.dst) << ":" << ps.p_dst;
 			return oss.str();
 		}
 	};
@@ -288,14 +292,21 @@ void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const
 			st.min_ts = i.ts;
 		if(st.max_ts < 0.0 || st.max_ts < i.ts)
 			st.max_ts = i.ts;
-		// exclude packets where src and dst are the same (they should not impact over the network)
-		// the kernel should be smart enough to let them "live" on shared memory only when those are
-		// localhost --> localhost...
-		if(i.dst == i.src)
-			continue; 
+		// ideally only one of is_recv and is_sent should be true
+		// for each packet
+		// if not one would hope is primarily because they are both
+		// 'true' as in the packates are local
 		const bool	is_recv = lam.is_local(i.dst),
 				is_sent = lam.is_local(i.src);
-		if(!(is_recv ^ is_sent)) {
+		if(is_recv && is_sent) {
+			// these could be 'local' packets in case, check
+			// and carry on localhost --> localhost...
+			log_list.push(gen_log(i, log_evt::type::LOCAL));
+			++st.local_pkts;
+			continue;
+		} else if(!is_recv && !is_sent) {
+			// this is an issue, because both source and dest
+			// addresses are not for this computer
 			log_list.push(gen_log(i, log_evt::type::UNDET));
 			++st.undet_pkts;
 			continue;
