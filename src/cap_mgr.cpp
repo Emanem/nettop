@@ -31,7 +31,7 @@
 
 namespace {
 
-	typedef std::list<nettop::packet_stats>	st_pkt_list;
+	typedef list_arena<nettop::packet_stats>	st_pkt_list;
 
 	// linux cooked header
 	// glanced from libpcap/ssl.h

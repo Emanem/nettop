@@ -26,20 +26,22 @@
 namespace nettop {
 
 	class packet_stats {
-		packet_stats& operator=(const packet_stats&) = delete;
 	public:
 		enum type {
 			PACKET_TCP = 0,
 			PACKET_UDP
 		};
 
-		const addr_t	src,
+		addr_t		src,
 				dst;
-		const uint16_t	p_src,
+		uint16_t	p_src,
 				p_dst;
-		const size_t	len;
-		const enum type	t;
-		const double	ts;
+		size_t		len;
+		enum type	t;
+		double		ts;
+
+		packet_stats() : src(0), dst(0), p_src(0), p_dst(0), len(0), t(PACKET_TCP), ts(0.0) {
+		}
 
 		packet_stats(const addr_t& src_, const addr_t& dst_, const uint16_t p_src_, const uint16_t p_dst_, const size_t len_, const enum type t_, const double ts_) : src(src_), dst(dst_), p_src(p_src_), p_dst(p_dst_), len(len_), t(t_), ts(ts_) {
 		}

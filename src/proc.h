@@ -125,7 +125,7 @@ namespace nettop {
 
 		proc_mgr();
 
-		void bind_packets(const std::list<packet_stats>& p_list, const local_addr_mgr& lam, ps_vec& out, stats& st, async_log_list& log_list);
+		void bind_packets(const list_arena<packet_stats>& p_list, const local_addr_mgr& lam, ps_vec& out, stats& st, async_log_list& log_list);
 	};
 }
 

@@ -23,6 +23,7 @@
 #include <mutex>
 #include <list>
 #include <algorithm>
+#include "list_arena.h"
 
 template<typename T>
 class mt_list {
@@ -31,7 +32,7 @@ class mt_list {
 	mt_list& operator=(const mt_list&) = delete;
 	
 	std::mutex	mtx_;
-	std::list<T>	list_;
+	list_arena<T>	list_;
 public:
 	mt_list() {}
 
@@ -42,12 +43,15 @@ public:
 		list_.push_back(in);
 	}
 
-	void push_many(const std::list<T>& in) {
+	void push_many(const list_arena<T>& in) {
 		std::lock_guard<std::mutex>	lg(mtx_);
-		std::for_each(in.begin(), in.end(), [&](const T& t){ list_.push_back(t); });
+		auto fn_iter = [this](const T& t) {
+			list_.push_back(t);
+		};
+		in.iterate(fn_iter);
 	}
 
-	void swap(std::list<T>& out) {
+	void swap(list_arena<T>& out) {
 		std::lock_guard<std::mutex>	lg(mtx_);
 		list_.swap(out);
 	}

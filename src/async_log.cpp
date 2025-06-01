@@ -28,11 +28,11 @@ void nettop::async_log::thread_proc(void) {
 		// sleep for a bit
 		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 		// get the current list
-		std::list<sp_async_line>	cur_list;
+		list_arena<sp_async_line>	cur_list;
 		list_.swap(cur_list);
 		if (!*ostr_)
 			continue;
-		for(const auto& i : cur_list) {
+		auto fn_iter = [this](const sp_async_line& i) {
 			const std::time_t	now_c = std::chrono::system_clock::to_time_t(i->get_tp());
 			const size_t		now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(i->get_tp().time_since_epoch()).count()%1000;
 			std::tm			now_tm;
@@ -42,7 +42,8 @@ void nettop::async_log::thread_proc(void) {
 			char	tm_full_str[64];
 			std::snprintf(tm_full_str, 64, tm_str, now_ms);
 			(*ostr_) << tm_full_str << " " << i->log(nr_) << std::endl;
-		}
+		};
+		cur_list.iterate(fn_iter);
 	}
 }
 

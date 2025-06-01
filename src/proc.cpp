@@ -74,9 +74,9 @@ namespace {
         		if (entry->d_type == DT_DIR)
 				continue;
 			// prepare and read the sym link
-			char		cur_sd[128],
+			char		cur_sd[278],
 					buf_sd[128];
-			std::snprintf(cur_sd, 128, "/proc/%i/fd/%s", pid, entry->d_name);
+			std::snprintf(cur_sd, 278, "/proc/%i/fd/%s", pid, entry->d_name);
 			const size_t rb = readlink(cur_sd, buf_sd, 128);
 			if(rb >= 128)
 				buf_sd[127] = '\0';
@@ -261,7 +261,7 @@ nettop::proc_mgr::proc_mgr() {
 
 //#include <iostream>
 
-void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const local_addr_mgr& lam, ps_vec& out, stats& st, async_log_list& log_list) {
+void nettop::proc_mgr::bind_packets(const list_arena<packet_stats>& p_list, const local_addr_mgr& lam, ps_vec& out, stats& st, async_log_list& log_list) {
 	// create a utility map from port/proto/ipv --> pid
 	std::map<ext_sd, proc_map::iterator>	sd_pid_map;
 	for(proc_map::iterator it = p_map_.begin(); it != p_map_.end(); ++it) {
@@ -282,7 +282,7 @@ void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const
 		it_kernel = p_map_.insert(std::make_pair<proc_info, std::pair<ps_list, ps_list> >(proc_info(-1, "(kernel)", sd_vec()), std::pair<ps_list, ps_list>())).first;
 	}
 	// first assign packets to processes
-	for(const auto& i : p_list) {
+	auto fn_iter = [&st, &log_list, &lam, &sd_pid_map, &it_kernel](const packet_stats& i) {
 		// refresh timestamp stats - this is a coarse measurement
 		if(st.min_ts < 0.0 || st.min_ts > i.ts)
 			st.min_ts = i.ts;
@@ -292,13 +292,13 @@ void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const
 		// the kernel should be smart enough to let them "live" on shared memory only when those are
 		// localhost --> localhost...
 		if(i.dst == i.src)
-			continue; 
+			return;
 		const bool	is_recv = lam.is_local(i.dst),
 				is_sent = lam.is_local(i.src);
 		if(!(is_recv ^ is_sent)) {
 			log_list.push(gen_log(i, log_evt::type::UNDET));
 			++st.undet_pkts;
-			continue;
+			return;
 		}
 		// from this point we're sure about a packet has been sent or received...
 		if(is_recv && (settings::CAPTURE_ASR & CAPTURE_RECV)) {
@@ -312,7 +312,7 @@ void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const
 					log_list.push(gen_log(i, log_evt::type::UNMAP_R));
 					++st.unmap_r_pkts;
 					it_kernel->second.first.push_back(i);
-					continue;
+					return;
 				}
 			}
 			it->second->second.first.push_back(i);
@@ -327,13 +327,14 @@ void nettop::proc_mgr::bind_packets(const std::list<packet_stats>& p_list, const
 					log_list.push(gen_log(i, log_evt::type::UNMAP_S));
 					++st.unmap_s_pkts;
 					it_kernel->second.second.push_back(i);
-					continue;
+					return;
 				}
 			}
 			it->second->second.second.push_back(i);
 		}
 		++st.proc_pkts;
-	}
+	};
+	p_list.iterate(fn_iter);
 	// now prepare output structure
 	out.reserve(p_map_.size());
 	for(const auto& i : p_map_) {

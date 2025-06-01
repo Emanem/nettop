@@ -22,16 +22,17 @@
 
 void nettop::name_res::thread_proc(void) {
 	while(!exit_) {
-		std::list<addr_t>	lcl_list;
+		list_arena<addr_t>	lcl_list;
 		list_.swap(lcl_list);
-		for(const auto& i : lcl_list) {
+		auto fn_iter = [this](const addr_t& i) {
 			const std::string	full_nm = i.to_str(true);
 			// add into the map
 			{
 				std::lock_guard<std::mutex>	lg(mtx_);
 				addr_map_[i] = full_nm;
 			} 
-		}
+		};
+		lcl_list.iterate(fn_iter);
 		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	}
 }
